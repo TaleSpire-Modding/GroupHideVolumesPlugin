@@ -4,22 +4,20 @@ This is a plugin for TaleSpire using BepInEx.
 
 ## Install
 
-Currently you need to either follow the build guide down below or use the R2ModMan. 
+Currently you need to either follow the build guide down below or use the R2ModMan.
 
 ## Usage
-
-After installing, you can press F1 to bring up a dialog to select an image.
-Upon selecting an image, a plane the with selected image will be displayed.
-Pressing F1 will allow to select a new image.
-Pressing F2 will clear the map of the displayed image.
-The plane currently has no networking so it is only visible locally.
-You can change the bind keys in the config editor.
-You can change the scale of images (pixels per tile) in the config editor.
-Image limitation is 16384x16384 pixels in size.
+This plugin allows a user to group Hide Volumes and Toggle the visibility in mass.
+Currently there's no way to save the groups. Right clicking on a hide volume will provide the extra options:
+- Create Group
+- Set Group (adds hide volume to group)
+- Remove from Group (removes volume from its group)
+- Show/Hide Group (mass show/hide)
+- Use this group (change to the group of selected hide volume)
 
 ## How to Compile / Modify
 
-Open ```ImageToPlanePlugin.sln``` in Visual Studio.
+Open ```GroupHideVolumesPlugin.sln``` in Visual Studio.
 
 You will need to add references to:
 
@@ -31,9 +29,17 @@ You will need to add references to:
 * UnityEngine.InputLegacyModule.dll 
 * UnityEngine.UI
 * Unity.TextMeshPro
-* System.Windows.Forms
+* RadialUI.dll
 ```
 
 Build the project.
 
-Browse to the newly created ```bin/Debug``` or ```bin/Release``` folders and copy the ```ImageToPlanePlugin.dll``` to ```Steam\steamapps\common\TaleSpire\BepInEx\plugins```
+Browse to the newly created ```bin/Debug``` or ```bin/Release``` folders and copy the ```GroupHideVolumesPlugin.dll``` to ```Steam\steamapps\common\TaleSpire\BepInEx\plugins```
+
+## Shoutouts
+Shoutout to my Patreons on https://www.patreon.com/HolloFox recognising your
+mighty contribution to my caffeine addiciton:
+- John Fuller
+
+## Bounty
+This plugin is to complete the Group Hide Volumes Bounty outlined by Demongund.

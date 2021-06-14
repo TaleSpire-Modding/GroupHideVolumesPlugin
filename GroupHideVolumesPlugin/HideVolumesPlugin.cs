@@ -272,7 +272,6 @@ namespace GroupHideVolumes
                 {
                     // Clear Groups
                     groupIndex = -1;
-                    currentHideVolume = null;
                     groups.Clear();
                 }
 
