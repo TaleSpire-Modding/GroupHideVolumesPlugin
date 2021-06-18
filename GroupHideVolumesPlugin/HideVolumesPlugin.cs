@@ -18,7 +18,7 @@ namespace GroupHideVolumes
     {
         // constants
         private const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
-        private const string Version = "1.1.2.0";
+        private const string Version = "1.1.3.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
@@ -264,49 +264,57 @@ namespace GroupHideVolumes
             HolloFoxes.BoardPersistence.SetInfo(Guid, JsonConvert.SerializeObject(tupled));
         }
 
-        private static void LoadGroups()
+        private static bool LoadGroups()
         {
-            // Get All Hide Volumes and index them
-            var a = HideVolumeManager.Instance;
-            var hideVolumes = a.transform.GetChild(1).Children();
-            var allVolumes = new List<HideVolumeItem>();
-            for (int i = 0; i < hideVolumes.LongCount(); i++)
+            try
             {
-                var volume = a.transform.GetChild(1).GetChild(i);
-                var volumeComponent = volume.GetComponent<HideVolumeItem>();
-                allVolumes.Add(volumeComponent);
-            }
-
-            var result = HolloFoxes.BoardPersistence.ReadInfo(Guid);
-            if (result == "") return;
-            var actual = JsonConvert.DeserializeObject<List<(List<int>, bool)>>(result);
-
-            // Convert Index to HideVolumes
-            var x = actual.Select(g => g.Item1);
-            List<List<HideVolumeItem>> intToVolume = new List<List<HideVolumeItem>>();
-            foreach (var group in x)
-            {
-                var indexes = new List<HideVolumeItem>();
-                foreach (var volume in group)
+                // Get All Hide Volumes and index them
+                var a = HideVolumeManager.Instance;
+                var hideVolumes = a.transform.GetChild(1).Children();
+                var allVolumes = new List<HideVolumeItem>();
+                for (int i = 0; i < hideVolumes.LongCount(); i++)
                 {
-                    Debug.Log($"Volume: {volume}");
-                    indexes.Add(allVolumes[volume]);
+                    var volume = a.transform.GetChild(1).GetChild(i);
+                    var volumeComponent = volume.GetComponent<HideVolumeItem>();
+                    allVolumes.Add(volumeComponent);
                 }
-                intToVolume.Add(
-                    indexes
-                );
+
+                var result = HolloFoxes.BoardPersistence.ReadInfo(Guid);
+                if (result == "") return true;
+                var actual = JsonConvert.DeserializeObject<List<(List<int>, bool)>>(result);
+
+                // Convert Index to HideVolumes
+                var x = actual.Select(g => g.Item1);
+                List<List<HideVolumeItem>> intToVolume = new List<List<HideVolumeItem>>();
+                foreach (var group in x)
+                {
+                    var indexes = new List<HideVolumeItem>();
+                    foreach (var volume in group)
+                    {
+                        indexes.Add(allVolumes[volume]);
+                    }
+
+                    intToVolume.Add(
+                        indexes
+                    );
+                }
+
+                var y = actual.Select(g => g.Item2).ToList();
+
+                var tupled = new List<(List<HideVolumeItem>, bool)>();
+                for (int i = 0; i < intToVolume.Count; i++)
+                {
+                    tupled.Add((intToVolume[i], y[i]));
+                }
+
+                groups = tupled;
             }
-
-            var y = actual.Select(g => g.Item2).ToList();
-
-            var tupled = new List<(List<HideVolumeItem>, bool)>();
-            for (int i = 0; i < intToVolume.Count; i++)
+            catch (Exception e)
             {
-                Debug.Log($"index {i}");
-                tupled.Add((intToVolume[i], y[i]));
+                return false;
             }
 
-            groups = tupled;
+            return true;
         }
 
         /// <summary>
@@ -318,7 +326,7 @@ namespace GroupHideVolumes
             {
                 if (!last)
                 {
-                    LoadGroups();
+                    if (!LoadGroups()) return;
                 }
                 if (groupIndex != -1)
                 {
