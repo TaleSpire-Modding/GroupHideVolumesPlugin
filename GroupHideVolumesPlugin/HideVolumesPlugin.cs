@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Linq;
@@ -19,13 +17,14 @@ namespace GroupHideVolumes
     {
         // constants
         private const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
-        private const string Version = "1.0.1.0";
+        private const string Version = "1.1.0.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
         
         public static HideVolumeItem currentHideVolume;
         public static int groupIndex = -1;
+        private bool last = false;
 
         /// <summary>
         /// Awake plugin
@@ -67,47 +66,25 @@ namespace GroupHideVolumes
             Texture2D tex = new Texture2D(32, 32);
             tex.LoadImage(System.IO.File.ReadAllBytes(dir + "\\" + FileName));
             return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f));
-        } 
+        }
 
+        // Menu Actions
         private static void CreateGroup(MapMenuItem item, object o)
         {
-            RemoveFromGroup(item,o);
-            groups.Add( (new List<HideVolumeItem>{currentHideVolume}, true));
+            RemoveFromGroup(item, o);
+            groups.Add((new List<HideVolumeItem> { currentHideVolume }, true));
             groupIndex = groups.Count - 1;
-            SetGroup(item,o);
+            SetGroup(item, o);
+            SaveGroups();
         }
-
-        private static void CurrentGroup(MapMenuItem item, object o)
-        {
-            foreach (var group in groups)
-            {
-                if (group.Item1.Contains(currentHideVolume))
-                {
-                    groupIndex = groups.IndexOf(group);
-                }
-            }
-        }
-
         private static void SetGroup(MapMenuItem item, object o)
         {
             if (groupIndex >= 0 && !groups[groupIndex].Item1.Contains(currentHideVolume))
             {
                 groups[groupIndex].Item1.Add(currentHideVolume);
             }
+            SaveGroups();
         }
-
-        private static void HideAll()
-        {
-            var a = HideVolumeManager.Instance;
-            var hideVolumes = a.transform.GetChild(1).Children();
-            for (int i = 0; i < hideVolumes.LongCount(); i++)
-            {
-                var volume = a.transform.GetChild(1).GetChild(i);
-                var volumeComponent = volume.GetComponent<HideVolumeItem>();
-                HideFace(volumeComponent,true);
-            }
-        }
-
         private static void RemoveFromGroup(MapMenuItem item, object o)
         {
             foreach (var group in groups)
@@ -119,8 +96,8 @@ namespace GroupHideVolumes
             }
 
             groups.RemoveAll(g => g.Item1.Count == 0);
+            SaveGroups();
         }
-
         private static void HideGroup(MapMenuItem item, object o)
         {
             var tempIndex = GetIndex();
@@ -130,8 +107,8 @@ namespace GroupHideVolumes
                 if (IsVisible(volume)) ToggleTiles(volume);
             }
             groups[tempIndex] = (groups[tempIndex].Item1, false);
+            SaveGroups();
         }
-
         private static void ShowGroup(MapMenuItem item, object o)
         {
             var tempIndex = GetIndex();
@@ -142,22 +119,59 @@ namespace GroupHideVolumes
             }
 
             groups[tempIndex] = (groups[tempIndex].Item1, true);
+            SaveGroups();
+        }
+        private static void CurrentGroup(MapMenuItem item, object o)
+        {
+            foreach (var group in groups)
+            {
+                if (group.Item1.Contains(currentHideVolume))
+                {
+                    groupIndex = groups.IndexOf(group);
+                }
+            }
+            SaveGroups();
         }
 
+        // Checks
+        private static bool StoreCurrentHideVolume(HideVolumeItem item)
+        {
+            currentHideVolume = item;
+            //JsonConvert.SerializeObject(groups);
+
+            var a = HideVolumeManager.Instance;
+            var hideVolumes = a.transform.GetChild(1).Children();
+            for (int i = 0; i < hideVolumes.LongCount(); i++)
+            {
+                var volume = a.transform.GetChild(1).GetChild(i);
+                var volumeComponent = volume.GetComponent<HideVolumeItem>();
+
+            }
+
+            return true;
+        }
+        private static void HideAll()
+        {
+            var a = HideVolumeManager.Instance;
+            var hideVolumes = a.transform.GetChild(1).Children();
+            for (int i = 0; i < hideVolumes.LongCount(); i++)
+            {
+                var volume = a.transform.GetChild(1).GetChild(i);
+                var volumeComponent = volume.GetComponent<HideVolumeItem>();
+                HideFace(volumeComponent,true);
+            }
+        }
         private static bool CanHide(HideVolumeItem item)
         {
             var tempIndex = GetIndex();
             if (tempIndex == -1) return false;
             return groups[tempIndex].Item2;
         }
-
         private static bool CanShow(HideVolumeItem item)
         {
-            var tempIndex = GetIndex();
-            if (tempIndex == -1) return false;
+            if (GetIndex() == -1) return false;
             return !CanHide(item);
         }
-
         private static int GetIndex()
         {
             var tempIndex = -1;
@@ -172,7 +186,6 @@ namespace GroupHideVolumes
 
             return tempIndex;
         }
-
         private static void HideFace(HideVolumeItem item, bool condition)
         {
             var volume = item.gameObject.transform;
@@ -188,21 +201,11 @@ namespace GroupHideVolumes
             // var pmeshFilter = painter.GetComponent<MeshFilter>();
             // var pmeshRenderer = painter.GetComponent<MeshRenderer>();
         }
-
-
         private static bool InGroup(HideVolumeItem item)
         {
             return groups.Any(g => g.Item1.Contains(item));
         }
-
         private static bool CanRemove(HideVolumeItem item) => InGroup(item);
-
-        private static bool StoreCurrentHideVolume(HideVolumeItem item)
-        {
-            currentHideVolume = item;
-            return true;
-        }
-
         private static bool GroupSelected()
         {
             return groupIndex != -1;
@@ -216,7 +219,19 @@ namespace GroupHideVolumes
                     !BoardSessionManager.IsLoading);
         }
 
-        private bool last = false;
+        
+
+
+        // Persistence
+        private static void SaveGroups()
+        {
+            HolloFoxes.BoardPersistence.SetInfo(Guid, "Created a Group");
+        }
+
+        private static void LoadGroups()
+        {
+            Debug.Log(HolloFoxes.BoardPersistence.ReadInfo(Guid));
+        }
 
         /// <summary>
         /// Looping method run by plugin
@@ -227,7 +242,7 @@ namespace GroupHideVolumes
             {
                 if (!last)
                 {
-                    // Load Groups
+                    LoadGroups();
                 }
                 if (groupIndex != -1)
                 {

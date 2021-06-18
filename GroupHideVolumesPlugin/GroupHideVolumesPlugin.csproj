@@ -49,6 +49,9 @@
     <Reference Include="BepInEx.Preloader">
       <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\core\BepInEx.Preloader.dll</HintPath>
     </Reference>
+    <Reference Include="BoardPersistence">
+      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\CMPDev\BepInEx\plugins\HolloFox_TS-BoardPersistencePlugin\BoardPersistence.dll</HintPath>
+    </Reference>
     <Reference Include="Bouncyrock.BouncePackage.Runtime">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TaleSpire\TaleSpire_Data\Managed\Bouncyrock.BouncePackage.Runtime.dll</HintPath>
     </Reference>
