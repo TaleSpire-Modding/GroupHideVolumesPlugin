@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Reflection;
 using System.Linq;
 using UnityEngine;
@@ -32,69 +35,39 @@ namespace GroupHideVolumes
             Logger.LogInfo("In Awake for HideVolumes");
 
             Debug.Log("HideVolumes Plug-in loaded");
-            // Load PUP
+            
             ModdingTales.ModdingUtils.Initialize(this, Logger);
 
+            // Register Group Menus in a branch
             RadialUIPlugin.AddOnHideVolume(
-                Guid + "SetGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Set Group",
-                    CloseMenuOnActivate = true,
-                    Action = SetGroup
-                }, SetCurrentHideVolume
-                );
-
-            RadialUIPlugin.AddOnHideVolume(
-                Guid + "RemoveFromGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Remove from Group",
-                    CloseMenuOnActivate = true,
-                    Action = RemoveFromGroup
-                }, CanRemove
-            );
-
-            RadialUIPlugin.AddOnHideVolume(
-                Guid + "HideGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Hide Group",
-                    CloseMenuOnActivate = true,
-                    Action = HideGroup
-                }, CanHide
-            );
-
-            RadialUIPlugin.AddOnHideVolume(
-                Guid + "ShowGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Show Group",
-                    CloseMenuOnActivate = true,
-                    Action = ShowGroup
-                }, CanShow
-            );
-
-            RadialUIPlugin.AddOnHideVolume(
-                Guid + "CreateGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Create Group",
-                    CloseMenuOnActivate = true,
-                    Action = CreateGroup
-                }
-            );
-
-            RadialUIPlugin.AddOnHideVolume(
-                Guid + "CurrentGroup",
-                new MapMenu.ItemArgs
-                {
-                    Title = "Use this Group",
-                    CloseMenuOnActivate = true,
-                    Action = CurrentGroup
-                }, InGroup
+                    Guid + "Grouping",
+                    new MapMenu.ItemArgs
+                    {
+                        Title = "Grouping",
+                        Action = ShowGroupingSubmenu,
+                        Icon = sprite("collection.png")
+                    }, StoreCurrentHideVolume
             );
         }
+
+        private static void ShowGroupingSubmenu(MapMenuItem item, object obj)
+        {
+            MapMenu mapMenu = MapMenuManager.OpenMenu(item, MapMenu.MenuType.BRANCH);
+            mapMenu.AddItem(new MapMenu.ItemArgs { Title = "Create Group", CloseMenuOnActivate = true, Action = CreateGroup, Icon = Icons.GetIconSprite("dungeonmaster") });
+            if (GroupSelected()) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Set Group", CloseMenuOnActivate = true, Action = SetGroup});
+            if (CanRemove(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Remove from Group", CloseMenuOnActivate = true, Action = RemoveFromGroup, Icon = Icons.GetIconSprite("remove") });
+            if (CanHide(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Hide Group", CloseMenuOnActivate = true, Action = HideGroup, Icon = sprite("show.png") });
+            if (CanShow(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Show Group", CloseMenuOnActivate = true, Action = ShowGroup, Icon = sprite("show.png") });
+            if (InGroup(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Use this Group", CloseMenuOnActivate = true, Action = CurrentGroup});
+        }
+
+        private static Sprite sprite(string FileName)
+        {
+            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            Texture2D tex = new Texture2D(32, 32);
+            tex.LoadImage(System.IO.File.ReadAllBytes(dir + "\\" + FileName));
+            return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f));
+        } 
 
         private static void CreateGroup(MapMenuItem item, object o)
         {
@@ -114,7 +87,6 @@ namespace GroupHideVolumes
                 }
             }
         }
-
 
         private static void SetGroup(MapMenuItem item, object o)
         {
@@ -148,7 +120,6 @@ namespace GroupHideVolumes
 
             groups.RemoveAll(g => g.Item1.Count == 0);
         }
-
 
         private static void HideGroup(MapMenuItem item, object o)
         {
@@ -226,10 +197,14 @@ namespace GroupHideVolumes
 
         private static bool CanRemove(HideVolumeItem item) => InGroup(item);
 
-
-        private static bool SetCurrentHideVolume(HideVolumeItem item)
+        private static bool StoreCurrentHideVolume(HideVolumeItem item)
         {
             currentHideVolume = item;
+            return true;
+        }
+
+        private static bool GroupSelected()
+        {
             return groupIndex != -1;
         }
 
@@ -277,17 +252,6 @@ namespace GroupHideVolumes
 
                 last = false;
             }
-        }
-
-        private void Probe()
-        {
-            /*CampaignSessionManager.SetCreatureStatNames(new[]
-            {
-                "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789",
-                "1",
-                "2",
-                "3"
-            });*/
         }
 
         public static void ToggleTiles(HideVolumeItem volumeComponent)
