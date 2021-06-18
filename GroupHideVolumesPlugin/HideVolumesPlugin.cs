@@ -17,7 +17,7 @@ namespace GroupHideVolumes
     {
         // constants
         private const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
-        private const string Version = "1.1.0.0";
+        private const string Version = "1.1.1.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
@@ -79,6 +79,7 @@ namespace GroupHideVolumes
         }
         private static void SetGroup(MapMenuItem item, object o)
         {
+            RemoveFromGroup(item, o);
             if (groupIndex >= 0 && !groups[groupIndex].Item1.Contains(currentHideVolume))
             {
                 groups[groupIndex].Item1.Add(currentHideVolume);
