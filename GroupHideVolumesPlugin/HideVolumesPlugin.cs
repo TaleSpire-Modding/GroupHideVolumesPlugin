@@ -225,12 +225,86 @@ namespace GroupHideVolumes
         // Persistence
         private static void SaveGroups()
         {
-            HolloFoxes.BoardPersistence.SetInfo(Guid, "Created a Group");
+            // Get All Hide Volumes and index them
+            var a = HideVolumeManager.Instance;
+            var hideVolumes = a.transform.GetChild(1).Children();
+            var allVolumes = new List<HideVolumeItem>();
+            for (int i = 0; i < hideVolumes.LongCount(); i++)
+            {
+                var volume = a.transform.GetChild(1).GetChild(i);
+                var volumeComponent = volume.GetComponent<HideVolumeItem>();
+                allVolumes.Add(volumeComponent);
+            }
+
+            // Convert HideVolumeItem to Index
+            var x = groups.Select(g => g.Item1);
+            List<List<int>> volumeToInt = new List<List<int>>();
+            foreach (var group in x)
+            {
+                var indexes = new List<int>();
+                foreach (var volume in group)
+                {
+                    indexes.Add(allVolumes.IndexOf(volume));
+                }
+                volumeToInt.Add(
+                    indexes
+                    );
+            }
+            
+            var y = groups.Select(g => g.Item2).ToList();
+
+            var tupled = new List<(List<int>, bool)>();
+            for (int i = 0; i < volumeToInt.Count; i++)
+            {
+                tupled.Add((volumeToInt[i],y[i]));
+            }
+
+            HolloFoxes.BoardPersistence.SetInfo(Guid, JsonConvert.SerializeObject(tupled));
         }
 
         private static void LoadGroups()
         {
-            Debug.Log(HolloFoxes.BoardPersistence.ReadInfo(Guid));
+            // Get All Hide Volumes and index them
+            var a = HideVolumeManager.Instance;
+            var hideVolumes = a.transform.GetChild(1).Children();
+            var allVolumes = new List<HideVolumeItem>();
+            for (int i = 0; i < hideVolumes.LongCount(); i++)
+            {
+                var volume = a.transform.GetChild(1).GetChild(i);
+                var volumeComponent = volume.GetComponent<HideVolumeItem>();
+                allVolumes.Add(volumeComponent);
+            }
+
+            var result = HolloFoxes.BoardPersistence.ReadInfo(Guid);
+            if (result == "") return;
+            var actual = JsonConvert.DeserializeObject<List<(List<int>, bool)>>(result);
+
+            // Convert Index to HideVolumes
+            var x = actual.Select(g => g.Item1);
+            List<List<HideVolumeItem>> intToVolume = new List<List<HideVolumeItem>>();
+            foreach (var group in x)
+            {
+                var indexes = new List<HideVolumeItem>();
+                foreach (var volume in group)
+                {
+                    Debug.Log($"Volume: {volume}");
+                    indexes.Add(allVolumes[volume]);
+                }
+                intToVolume.Add(
+                    indexes
+                );
+            }
+
+            var y = actual.Select(g => g.Item2).ToList();
+
+            var tupled = new List<(List<HideVolumeItem>, bool)>();
+            for (int i = 0; i < intToVolume.Count; i++)
+            {
+                Debug.Log($"index {i}");
+                tupled.Add((intToVolume[i], y[i]));
+            }
+
+            groups = tupled;
         }
 
         /// <summary>
