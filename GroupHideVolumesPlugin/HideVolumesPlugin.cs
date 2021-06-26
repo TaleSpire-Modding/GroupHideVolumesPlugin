@@ -11,14 +11,14 @@ using RadialUI;
 namespace GroupHideVolumes
 {
 
-    [BepInPlugin(Guid, "HideVolumesPlugin", Version)]
+    [BepInPlugin(Guid, "HolloFoxes' Group Hide Volumes Plug-In", Version)]
     [BepInDependency(RadialUIPlugin.Guid)]
     [BepInDependency(HolloFoxes.BoardPersistence.Guid)]
     public class HideVolumesPlugin : BaseUnityPlugin
     {
         // constants
         private const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
-        private const string Version = "1.1.3.0";
+        private const string Version = "1.1.4.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
@@ -64,9 +64,8 @@ namespace GroupHideVolumes
         private static Sprite sprite(string FileName)
         {
             var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            Texture2D tex = new Texture2D(32, 32);
-            tex.LoadImage(System.IO.File.ReadAllBytes(dir + "\\" + FileName));
-            return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f));
+            var path = dir + "\\" + FileName;
+            return RadialSubmenu.GetIconFromFile(path);
         }
 
         // Menu Actions
