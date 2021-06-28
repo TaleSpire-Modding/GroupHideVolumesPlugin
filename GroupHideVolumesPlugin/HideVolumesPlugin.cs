@@ -14,10 +14,11 @@ namespace GroupHideVolumes
     [BepInPlugin(Guid, "HolloFoxes' Group Hide Volumes Plug-In", Version)]
     [BepInDependency(RadialUIPlugin.Guid)]
     [BepInDependency(HolloFoxes.BoardPersistence.Guid)]
+    [BepInDependency(HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.Guid)]
     public class HideVolumesPlugin : BaseUnityPlugin
     {
         // constants
-        private const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
+        public const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
         private const string Version = "1.1.4.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
@@ -39,26 +40,53 @@ namespace GroupHideVolumes
             ModdingTales.ModdingUtils.Initialize(this, Logger);
 
             // Register Group Menus in a branch
-            RadialUIPlugin.AddOnHideVolume(
-                    Guid + "Grouping",
-                    new MapMenu.ItemArgs
-                    {
-                        Title = "Grouping",
-                        Action = ShowGroupingSubmenu,
-                        Icon = sprite("collection.png")
-                    }, StoreCurrentHideVolume
+            RadialSubmenu.EnsureMainMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                RadialSubmenu.MenuType.HideVolume,
+                "Grouping",
+                sprite("collection.png")
+                // StoreCurrentHideVolume
+            );
+
+            RadialSubmenu.EnsureMainMenuItem(RadialUIPlugin.Guid + ".HideVolume.Labels",
+                RadialSubmenu.MenuType.HideVolume,
+                "Grouping",
+                sprite("collection.png")
+                // StoreCurrentHideVolume
+            );
+
+
+            // Grouping branch
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                new MapMenu.ItemArgs { Title = "Create Group", CloseMenuOnActivate = true, Action = CreateGroup, Icon = Icons.GetIconSprite("dungeonmaster") }
+            );
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                    new MapMenu.ItemArgs { Title = "Set Group", CloseMenuOnActivate = true, Action = SetGroup }
+                    , null, GroupSelected);
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                new MapMenu.ItemArgs { Title = "Remove from Group", CloseMenuOnActivate = true, Action = RemoveFromGroup, Icon = Icons.GetIconSprite("remove") }
+                , null,CanRemove);
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                new MapMenu.ItemArgs { Title = "Hide Group", CloseMenuOnActivate = true, Action = HideGroup, Icon = sprite("show.png") }
+                , null,CanHide);
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                new MapMenu.ItemArgs { Title = "Show Group", CloseMenuOnActivate = true, Action = ShowGroup, Icon = sprite("show.png") }
+                , null,CanShow);
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
+                new MapMenu.ItemArgs { Title = "Use this Group", CloseMenuOnActivate = true, Action = CurrentGroup }
+                , null,InGroup);
+
+            // Labeling Branch
+            // Add Icons sub menu item
+            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Labels",
+                "Set Group Name",
+                sprite("Edit.png"),
+                SetLabelName
             );
         }
 
-        private static void ShowGroupingSubmenu(MapMenuItem item, object obj)
+        private void SetLabelName(HideVolumeItem hideVolume, string guid, MapMenuItem item)
         {
-            MapMenu mapMenu = MapMenuManager.OpenMenu(item, MapMenu.MenuType.BRANCH);
-            mapMenu.AddItem(new MapMenu.ItemArgs { Title = "Create Group", CloseMenuOnActivate = true, Action = CreateGroup, Icon = Icons.GetIconSprite("dungeonmaster") });
-            if (GroupSelected()) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Set Group", CloseMenuOnActivate = true, Action = SetGroup});
-            if (CanRemove(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Remove from Group", CloseMenuOnActivate = true, Action = RemoveFromGroup, Icon = Icons.GetIconSprite("remove") });
-            if (CanHide(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Hide Group", CloseMenuOnActivate = true, Action = HideGroup, Icon = sprite("show.png") });
-            if (CanShow(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Show Group", CloseMenuOnActivate = true, Action = ShowGroup, Icon = sprite("show.png") });
-            if (InGroup(currentHideVolume)) mapMenu.AddItem(new MapMenu.ItemArgs {Title = "Use this Group", CloseMenuOnActivate = true, Action = CurrentGroup});
+            Debug.Log("Lol");
         }
 
         private static Sprite sprite(string FileName)
@@ -71,10 +99,11 @@ namespace GroupHideVolumes
         // Menu Actions
         private static void CreateGroup(MapMenuItem item, object o)
         {
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
             RemoveFromGroup(item, o);
             groups.Add((new List<HideVolumeItem> { currentHideVolume }, true));
             groupIndex = groups.Count - 1;
-            SetGroup(item, o);
+            SetGroup(item,o);
             SaveGroups();
         }
         private static void SetGroup(MapMenuItem item, object o)
@@ -96,7 +125,7 @@ namespace GroupHideVolumes
                 }
             }
 
-            groups.RemoveAll(g => g.Item1.Count == 0);
+            groupIndex = GetIndex();
             SaveGroups();
         }
         private static void HideGroup(MapMenuItem item, object o)
@@ -134,25 +163,10 @@ namespace GroupHideVolumes
             SaveGroups();
         }
 
-        // Checks
-        private static bool StoreCurrentHideVolume(HideVolumeItem item)
-        {
-            currentHideVolume = item;
-            //JsonConvert.SerializeObject(groups);
-
-            var a = HideVolumeManager.Instance;
-            var hideVolumes = a.transform.GetChild(1).Children();
-            for (int i = 0; i < hideVolumes.LongCount(); i++)
-            {
-                var volume = a.transform.GetChild(1).GetChild(i);
-                var volumeComponent = volume.GetComponent<HideVolumeItem>();
-
-            }
-
-            return true;
-        }
+        // checks
         private static void HideAll()
         {
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
             var a = HideVolumeManager.Instance;
             var hideVolumes = a.transform.GetChild(1).Children();
             for (int i = 0; i < hideVolumes.LongCount(); i++)
@@ -162,19 +176,20 @@ namespace GroupHideVolumes
                 HideFace(volumeComponent,true);
             }
         }
-        private static bool CanHide(HideVolumeItem item)
+        private static bool CanHide()
         {
             var tempIndex = GetIndex();
             if (tempIndex == -1) return false;
             return groups[tempIndex].Item2;
         }
-        private static bool CanShow(HideVolumeItem item)
+        private static bool CanShow()
         {
             if (GetIndex() == -1) return false;
-            return !CanHide(item);
+            return !CanHide();
         }
         private static int GetIndex()
         {
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
             var tempIndex = -1;
 
             foreach (var group in groups)
@@ -189,6 +204,7 @@ namespace GroupHideVolumes
         }
         private static void HideFace(HideVolumeItem item, bool condition)
         {
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
             var volume = item.gameObject.transform;
             // Face
             var TaleVolume = volume.GetChild(0);
@@ -202,13 +218,15 @@ namespace GroupHideVolumes
             // var pmeshFilter = painter.GetComponent<MeshFilter>();
             // var pmeshRenderer = painter.GetComponent<MeshRenderer>();
         }
-        private static bool InGroup(HideVolumeItem item)
+        private static bool InGroup()
         {
-            return groups.Any(g => g.Item1.Contains(item));
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
+            return groups.Any(g => g.Item1.Contains(RadialUIPlugin.GetLastRadialHideVolume()));
         }
-        private static bool CanRemove(HideVolumeItem item) => InGroup(item);
+        private static bool CanRemove() => InGroup();
         private static bool GroupSelected()
         {
+            currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
             return groupIndex != -1;
         }
 
