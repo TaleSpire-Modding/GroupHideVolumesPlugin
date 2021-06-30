@@ -84,9 +84,29 @@ namespace GroupHideVolumes
             );
         }
 
+        private static string Labelholder;
+        private static bool processing;
+
         private void SetLabelName(HideVolumeItem hideVolume, string guid, MapMenuItem item)
         {
-            Debug.Log("Lol");
+            SystemMessage.AskForTextInput("Set Hide Volume Label", "", "Set Label", SetLabel, ProcessLabel);
+        }
+        private void SetLabel(string input)
+        {
+            Labelholder = input;
+            processing = true;
+        }
+
+        private void ProcessLabel()
+        {
+            // Foreach label in group, set label
+            if (processing)
+            {
+                var lastVolume = RadialUIPlugin.GetLastRadialHideVolume();
+
+                HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(lastVolume, Guid, Labelholder);
+                processing = false;
+            }
         }
 
         private static Sprite sprite(string FileName)
