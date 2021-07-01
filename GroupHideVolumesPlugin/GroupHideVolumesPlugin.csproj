@@ -395,6 +395,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="dto.cs" />
     <Compile Include="HideVolumesPlugin.cs" />
     <Compile Include="ModdingUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

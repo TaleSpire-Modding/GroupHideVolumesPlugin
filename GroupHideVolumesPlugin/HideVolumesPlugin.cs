@@ -18,7 +18,8 @@ namespace GroupHideVolumes
     public class HideVolumesPlugin : BaseUnityPlugin
     {
         // constants
-        public const string Guid = "org.hollofox.plugins.HideVolumesPlugin";
+        public const string Guid = "org.hollofox.plugins.GroupHideVolumesPlugin";
+        public const string G = "G";
         private const string Version = "1.1.4.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
@@ -35,7 +36,7 @@ namespace GroupHideVolumes
         {
             Logger.LogInfo("In Awake for HideVolumes");
 
-            Debug.Log("HideVolumes Plug-in loaded");
+            Debug.Log("GroupHideVolumes Plug-in loaded");
             
             ModdingTales.ModdingUtils.Initialize(this, Logger);
 
@@ -76,7 +77,6 @@ namespace GroupHideVolumes
                 , null,InGroup);
 
             // Labeling Branch
-            // Add Icons sub menu item
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Labels",
                 "Set Group Name",
                 sprite("Edit.png"),
@@ -95,6 +95,7 @@ namespace GroupHideVolumes
         {
             Labelholder = input;
             processing = true;
+            ProcessLabel();
         }
 
         private void ProcessLabel()
@@ -103,8 +104,7 @@ namespace GroupHideVolumes
             if (processing)
             {
                 var lastVolume = RadialUIPlugin.GetLastRadialHideVolume();
-
-                HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(lastVolume, Guid, Labelholder);
+                HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(lastVolume, G, Labelholder);
                 processing = false;
             }
         }
@@ -292,13 +292,14 @@ namespace GroupHideVolumes
             
             var y = groups.Select(g => g.Item2).ToList();
 
-            var tupled = new List<(List<int>, bool)>();
+            var tupled = new List<dto>();
             for (int i = 0; i < volumeToInt.Count; i++)
             {
-                tupled.Add((volumeToInt[i],y[i]));
+                var bo = y[i] ? 1: 0;
+                tupled.Add(new dto{I = volumeToInt[i], B = bo});
             }
 
-            HolloFoxes.BoardPersistence.SetInfo(Guid, JsonConvert.SerializeObject(tupled));
+            HolloFoxes.BoardPersistence.SetInfo(G, JsonConvert.SerializeObject(tupled));
         }
 
         private static bool LoadGroups()
@@ -316,12 +317,12 @@ namespace GroupHideVolumes
                     allVolumes.Add(volumeComponent);
                 }
 
-                var result = HolloFoxes.BoardPersistence.ReadInfo(Guid);
+                var result = HolloFoxes.BoardPersistence.ReadInfo(G);
                 if (result == "") return true;
-                var actual = JsonConvert.DeserializeObject<List<(List<int>, bool)>>(result);
+                var actual = JsonConvert.DeserializeObject<List<dto>>(result);
 
                 // Convert Index to HideVolumes
-                var x = actual.Select(g => g.Item1);
+                var x = actual.Select(g => g.I);
                 List<List<HideVolumeItem>> intToVolume = new List<List<HideVolumeItem>>();
                 foreach (var group in x)
                 {
@@ -336,12 +337,13 @@ namespace GroupHideVolumes
                     );
                 }
 
-                var y = actual.Select(g => g.Item2).ToList();
+                var y = actual.Select(g => g.B).ToList();
 
-                var tupled = new List<(List<HideVolumeItem>, bool)>();
+                var tupled = new List<(List<HideVolumeItem>, bool )>();
                 for (int i = 0; i < intToVolume.Count; i++)
                 {
-                    tupled.Add((intToVolume[i], y[i]));
+                    var bo = y[i] == 1 ? true : false;
+                    tupled.Add((intToVolume[i], bo));
                 }
 
                 groups = tupled;
