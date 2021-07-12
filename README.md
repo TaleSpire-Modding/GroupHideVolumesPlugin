@@ -8,7 +8,7 @@ Currently you need to either follow the build guide down below or use the R2ModM
 
 ## Usage
 This plugin allows a user to group Hide Volumes and Toggle the visibility in mass.
-Currently there's no way to save the groups. Right clicking on a hide volume will provide the extra options:
+Right clicking on a hide volume will provide the extra options:
 - Create Group
 - Set Group (adds hide volume to group)
 - Remove from Group (removes volume from its group)
@@ -30,6 +30,7 @@ You will need to add references to:
 * UnityEngine.UI
 * Unity.TextMeshPro
 * RadialUI.dll
+* HideVolumeLabelsPlugin.dll
 ```
 
 Build the project.
@@ -37,6 +38,8 @@ Build the project.
 Browse to the newly created ```bin/Debug``` or ```bin/Release``` folders and copy the ```GroupHideVolumesPlugin.dll``` to ```Steam\steamapps\common\TaleSpire\BepInEx\plugins```
 
 ## Changelog
+1.2.1: Fix ReadMe
+1.2.0: Update HVG and fix bugs from update. Group labels now work (careful there is a data limit for now)
 1.1.4: Update method to fetch sprite for robustness
 1.1.3: Remove debug logging not needed
 1.1.2: Fix bepin dependency on BoardPersistence Plugin

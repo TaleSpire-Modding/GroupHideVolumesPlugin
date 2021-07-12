@@ -20,7 +20,7 @@ namespace GroupHideVolumes
         // constants
         public const string Guid = "org.hollofox.plugins.GroupHideVolumesPlugin";
         public const string G = "G";
-        private const string Version = "1.2.0.0";
+        private const string Version = "1.2.1.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
