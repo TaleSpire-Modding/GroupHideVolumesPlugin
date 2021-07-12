@@ -396,6 +396,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="dto.cs" />
+    <Compile Include="HVPActions.cs" />
+    <Compile Include="HVPChecks.cs" />
     <Compile Include="HideVolumesPlugin.cs" />
     <Compile Include="ModdingUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
