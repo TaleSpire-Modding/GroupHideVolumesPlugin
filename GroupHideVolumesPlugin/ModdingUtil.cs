@@ -132,9 +132,7 @@ namespace ModdingTales
 
         static ModdingUtils()
         {
-            Commands.Add("GetCameraLocation", GetCameraLocation);
             Commands.Add("MoveCamera", MoveCamera);
-            Commands.Add("SetCameraHeight", SetCameraHeight);
             Commands.Add("RotateCamera", RotateCamera);
             Commands.Add("ZoomCamera", ZoomCamera);
             Commands.Add("TiltCamera", TiltCamera);
@@ -361,24 +359,6 @@ namespace ModdingTales
             return new APIResponse("Say queued successful").ToString();
         }
 
-        private static string SetCameraHeight(string[] input)
-        {
-            return SetCameraHeight(input[0], input[1]);
-        }
-
-        public static string SetCameraHeight(string height, string absolute)
-        {
-            if (bool.Parse(absolute))
-            {
-                CameraController.MoveToHeight(float.Parse(height), true);
-            }
-            else
-            {
-                CameraController.MoveToHeight(float.Parse(height) + CameraController.CameraHeight, true);
-            }
-            return new APIResponse("Camera Move successful").ToString();
-        }
-
         private static string TiltCamera(string[] input)
         {
             return TiltCamera(input[0], input[1]);
@@ -466,15 +446,6 @@ namespace ModdingTales
             return new APIResponse("Camera Move successful").ToString();
         }
 
-        private static string GetCameraLocation(string[] input)
-        {
-            return GetCameraLocation();
-        }
-
-        public static string GetCameraLocation()
-        {
-            return JsonConvert.SerializeObject(new F3(CameraController.Position.x, CameraController.CameraHeight, CameraController.Position.z));
-        }
         private static string MoveCamera(string[] input)
         {
             return MoveCamera(input[0], input[1], input[2], input[3]);
@@ -600,34 +571,7 @@ namespace ModdingTales
             }
         }
 
-        public static void UpdateSlab()
-        {
-            while (slabQueue.Count > 0)
-            {
-                var slabToPaste = slabQueue.Dequeue();
-                Debug.Log("Slab:");
-                Debug.Log(slabToPaste);
-                if (BoardSessionManager.Board.PushStringToTsClipboard(slabToPaste.SlabText) == PushStringToTsClipboardResult.Success)
-                {
-                    Copied mostRecentCopied_LocalOnly = BoardSessionManager.Board.GetMostRecentCopied_LocalOnly();
-                    if (mostRecentCopied_LocalOnly != null)
-                    {
-                        Debug.Log("X:" + slabToPaste.Position.x + " y:" + slabToPaste.Position.x + " z:" + slabToPaste.Position.z + " Slab: " + slabToPaste.SlabText);
-                        BoardSessionManager.Board.PasteCopied(new Vector3(slabToPaste.Position.x, slabToPaste.Position.y, slabToPaste.Position.z), 0, 0UL);
-                        //BoardSessionManager.Board.PasteCopied(new Vector3(slabToPaste.Position.x, slabToPaste.Position.y, slabToPaste.Position.z), 0, 0UL);
-                    }
-                }
-            }
-        }
-
-        private static void UpdateBoardLoad()
-        {
-            if (boardsToLoad.Count > 0)
-            {
-                BoardInfo bi = boardsToLoad.Dequeue();
-                SingletonBehaviour<BoardSaverManager>.Instance.Load(bi);
-            }
-        }
+        
 
         public static Slab GetSelectedSlab()
         {

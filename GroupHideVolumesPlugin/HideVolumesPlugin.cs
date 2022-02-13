@@ -5,22 +5,23 @@ using System.Reflection;
 using System.Linq;
 using UnityEngine;
 using BepInEx;
+using BoardPersistence;
 using Newtonsoft.Json;
 using RadialUI;
+using HVG = HideVolumeLabelsPlugin;
 
 namespace GroupHideVolumes
 {
 
     [BepInPlugin(Guid, "HolloFoxes' Group Hide Volumes Plug-In", Version)]
     [BepInDependency(RadialUIPlugin.Guid)]
-    [BepInDependency(HolloFoxes.BoardPersistence.Guid)]
-    [BepInDependency(HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.Guid)]
+    [BepInDependency(BoardPersistencePlugin.Guid)]
+    [BepInDependency(HVG.HideVolumeLabelsPlugin.Guid)]
     public partial class HideVolumesPlugin : BaseUnityPlugin
     {
         // constants
         public const string Guid = "org.hollofox.plugins.GroupHideVolumesPlugin";
-        public const string G = "G";
-        private const string Version = "1.2.1.0";
+        private const string Version = "2.0.0.0";
 
         private static List<(List<HideVolumeItem>,bool)> groups =
             new List<(List<HideVolumeItem>, bool)>();
@@ -106,7 +107,7 @@ namespace GroupHideVolumes
                 var tempIndex = GetIndex();
                 foreach (var volume in groups[tempIndex].Item1)
                 {
-                    HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(volume, G, Labelholder);
+                    HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(volume, Guid, Labelholder);
                 }
                 processing = false;
             }
@@ -168,7 +169,7 @@ namespace GroupHideVolumes
                 tupled.Add(new dto{I = volumeToInt[i], B = bo});
             }
 
-            HolloFoxes.BoardPersistence.SetInfo(G, JsonConvert.SerializeObject(tupled));
+            BoardPersistencePhoton.Instance.SetBoardData(Guid, JsonConvert.SerializeObject(tupled));
         }
 
         private static bool LoadGroups()
@@ -186,7 +187,7 @@ namespace GroupHideVolumes
                     allVolumes.Add(volumeComponent);
                 }
 
-                var result = HolloFoxes.BoardPersistence.ReadInfo(G);
+                var result = BoardPersistencePhoton.Instance.GetBoardData(Guid);
                 if (result == "") return true;
                 var actual = JsonConvert.DeserializeObject<List<dto>>(result);
 
@@ -241,10 +242,8 @@ namespace GroupHideVolumes
                     // Hide all
                     HideAll();
 
-                    // Un-hide set group
-                    if (groupIndex != -1)
-                        foreach (var volume in groups[groupIndex].Item1)
-                            HideFace(volume, false);
+                   foreach (var volume in groups[groupIndex].Item1)
+                       HideFace(volume, false);
                 }
                 last = true;
             }
@@ -263,20 +262,19 @@ namespace GroupHideVolumes
 
         public static void ToggleTiles(HideVolumeItem volumeComponent)
         {
-            var tool = new GMHideVolumeMenuBoardTool();
-            tool.SetSelectedVolume(volumeComponent, new Vector3(0, 0, 0));
 
-            Type classType = tool.GetType();
-
-            MethodInfo mi = classType.GetMethod("ToggleTiles",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-
-            mi.Invoke(tool, new object[] {null, null});
+            var x = IsVisible(volumeComponent);
+            volumeComponent.VisibilityChange(!x);
+            
         }
 
         public static bool IsVisible(HideVolumeItem volumeComponent)
         {
-            return volumeComponent.HideVolume.State == (byte)0 ? true : false;
+            Type classType = volumeComponent.GetType();
+            FieldInfo mi = classType.GetField("_taleVolume",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var t = (TaleVolume)mi.GetValue(volumeComponent);
+            return t.gameObject.active;
         }
     }
 }
