@@ -1,66 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Linq;
 using UnityEngine;
 using BepInEx;
-using BoardPersistence;
-using Newtonsoft.Json;
+using Bounce.ManagedCollections;
+using Bounce.Unmanaged;
+using LordAshes;
 using RadialUI;
-using HVG = HideVolumeLabelsPlugin;
+using Bounce.Singletons;
+using HarmonyLib;
 
 namespace GroupHideVolumes
 {
 
     [BepInPlugin(Guid, "HolloFoxes' Group Hide Volumes Plug-In", Version)]
     [BepInDependency(RadialUIPlugin.Guid)]
-    [BepInDependency(BoardPersistencePlugin.Guid)]
-    [BepInDependency(HVG.HideVolumeLabelsPlugin.Guid)]
+    [BepInDependency(AssetDataPlugin.Guid)]
+    // [BepInDependency(HVG.HideVolumeLabelsPlugin.Guid)]
     public partial class HideVolumesPlugin : BaseUnityPlugin
     {
         // constants
         public const string Guid = "org.hollofox.plugins.GroupHideVolumesPlugin";
         private const string Version = "2.0.0.0";
 
-        private static List<(List<HideVolumeItem>,bool)> groups =
-            new List<(List<HideVolumeItem>, bool)>();
+        // Key = HideVolume, value = name of group, Going to need complete re-write
+        private static Dictionary<NGuid,string> groups = new Dictionary<NGuid, string>();
+        internal static BList<HideVolumeItem> hideVolumes;
+
+        private Sprite collectionSprite;
+        private Sprite showSprite;
         
         public static HideVolumeItem currentHideVolume;
-        public static int groupIndex = -1;
-        private bool last = false;
-
+        private static string currentGroup;
+        
         /// <summary>
         /// Awake plugin
         /// </summary>
         void Awake()
         {
             Logger.LogInfo("In Awake for HideVolumes");
-
-            Debug.Log("GroupHideVolumes Plug-in loaded");
-            
+            var harmony = new Harmony(Guid);
+            harmony.PatchAll();
             ModdingTales.ModdingUtils.Initialize(this, Logger);
+
+            showSprite = Icons.GetIconSprite("toggle_hide");
+            collectionSprite = null; // FileAccessPlugin.Image.LoadSprite("/Images/Icons/collection.png");
 
             // Register Group Menus in a branch
             RadialSubmenu.EnsureMainMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
                 RadialSubmenu.MenuType.HideVolume,
                 "Grouping",
-                sprite("collection.png")
-                // StoreCurrentHideVolume
+                collectionSprite
             );
-
-            RadialSubmenu.EnsureMainMenuItem(RadialUIPlugin.Guid + ".HideVolume.Labels",
-                RadialSubmenu.MenuType.HideVolume,
-                "Grouping",
-                sprite("collection.png")
-                // StoreCurrentHideVolume
-            );
-
 
             // Grouping branch
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
-                new MapMenu.ItemArgs { Title = "Create Group", CloseMenuOnActivate = true, Action = CreateGroup, Icon = Icons.GetIconSprite("dungeonmaster") }
+                new MapMenu.ItemArgs { Title = "Create Group", CloseMenuOnActivate = true, Action = CreateGroup, Icon = collectionSprite }
             );
+
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
                     new MapMenu.ItemArgs { Title = "Set Group", CloseMenuOnActivate = true, Action = SetGroup }
                     , null, GroupSelected);
@@ -68,213 +65,68 @@ namespace GroupHideVolumes
                 new MapMenu.ItemArgs { Title = "Remove from Group", CloseMenuOnActivate = true, Action = RemoveFromGroup, Icon = Icons.GetIconSprite("remove") }
                 , null,CanRemove);
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
-                new MapMenu.ItemArgs { Title = "Hide Group", CloseMenuOnActivate = true, Action = HideGroup, Icon = sprite("show.png") }
-                , null,CanHide);
+                new MapMenu.ItemArgs { Title = "Hide Group", CloseMenuOnActivate = true, Action = HideGroup, Icon = showSprite }
+                , null,InGroup);
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
-                new MapMenu.ItemArgs { Title = "Show Group", CloseMenuOnActivate = true, Action = ShowGroup, Icon = sprite("show.png") }
-                , null,CanShow);
+                new MapMenu.ItemArgs { Title = "Show Group", CloseMenuOnActivate = true, Action = ShowGroup, Icon = showSprite }
+                , null, InGroup);
             RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Groups",
                 new MapMenu.ItemArgs { Title = "Use this Group", CloseMenuOnActivate = true, Action = CurrentGroup }
                 , null, InGroup);
 
-            // Labeling Branch
-            RadialSubmenu.CreateSubMenuItem(RadialUIPlugin.Guid + ".HideVolume.Labels",
-                "Set Group Name",
-                sprite("Edit.png"),
-                SetLabelName
-            );
+            AssetDataPlugin.Subscribe($"{Guid}",DataChangeCallback);
         }
 
-        private static string Labelholder;
-        private static bool processing;
 
-        private void SetLabelName(HideVolumeItem hideVolume, string guid, MapMenuItem item)
-        {
-            SystemMessage.AskForTextInput("Set Hide Volume Label", "", "Set Label", SetLabel, ProcessLabel);
-        }
-        private void SetLabel(string input)
-        {
-            Labelholder = input;
-            processing = true;
-            ProcessLabel();
-        }
-
-        private void ProcessLabel()
-        {
-            // Foreach label in group, set label
-            if (processing)
-            {
-                var tempIndex = GetIndex();
-                foreach (var volume in groups[tempIndex].Item1)
-                {
-                    HideVolumeLabelsPlugin.HideVolumeLabelsPlugin.SetLabel(volume, Guid, Labelholder);
-                }
-                processing = false;
-            }
-        }
-
-        private static Sprite sprite(string FileName)
-        {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var path = dir + "\\" + FileName;
-            return RadialSubmenu.GetIconFromFile(path);
-        }
-
-        private bool OnBoard()
-        {
-            return (CameraController.HasInstance &&
-                    BoardSessionManager.HasInstance &&
-                    BoardSessionManager.HasBoardAndIsInNominalState &&
-                    !BoardSessionManager.IsLoading);
-        }
-
-        
-
-
-        // Persistence
-        private static void SaveGroups()
-        {
-            // Get All Hide Volumes and index them
-            var a = HideVolumeManager.Instance;
-            var hideVolumes = a.transform.GetChild(1).Children();
-            var allVolumes = new List<HideVolumeItem>();
-            for (int i = 0; i < hideVolumes.LongCount(); i++)
-            {
-                var volume = a.transform.GetChild(1).GetChild(i);
-                var volumeComponent = volume.GetComponent<HideVolumeItem>();
-                allVolumes.Add(volumeComponent);
-            }
-
-            // Convert HideVolumeItem to Index
-            var x = groups.Select(g => g.Item1);
-            List<List<int>> volumeToInt = new List<List<int>>();
-            foreach (var group in x)
-            {
-                var indexes = new List<int>();
-                foreach (var volume in group)
-                {
-                    indexes.Add(allVolumes.IndexOf(volume));
-                }
-                volumeToInt.Add(
-                    indexes
-                    );
-            }
-            
-            var y = groups.Select(g => g.Item2).ToList();
-
-            var tupled = new List<dto>();
-            for (int i = 0; i < volumeToInt.Count; i++)
-            {
-                var bo = y[i] ? 1: 0;
-                tupled.Add(new dto{I = volumeToInt[i], B = bo});
-            }
-
-            BoardPersistencePhoton.Instance.SetBoardData(Guid, JsonConvert.SerializeObject(tupled));
-        }
-
-        private static bool LoadGroups()
+        private void DataChangeCallback(AssetDataPlugin.DatumChange obj)
         {
             try
             {
-                // Get All Hide Volumes and index them
-                var a = HideVolumeManager.Instance;
-                var hideVolumes = a.transform.GetChild(1).Children();
-                var allVolumes = new List<HideVolumeItem>();
-                for (int i = 0; i < hideVolumes.LongCount(); i++)
+                var volume = new NGuid(obj.source);
+                groups[volume] = (string) obj.value;
+                if (string.IsNullOrWhiteSpace(currentGroup)) return;
+                HideAll();
+                currentHideVolume = RadialUIPlugin.GetLastRadialHideVolume();
+                var group = groups[currentHideVolume.HideVolume.Id];
+                var hiding = groups.Where(e => e.Value == @group).Select(e => e.Key);
+                foreach (var volumeId in hiding)
                 {
-                    var volume = a.transform.GetChild(1).GetChild(i);
-                    var volumeComponent = volume.GetComponent<HideVolumeItem>();
-                    allVolumes.Add(volumeComponent);
+                    HideFace(findItem(volumeId), false);
                 }
-
-                var result = BoardPersistencePhoton.Instance.GetBoardData(Guid);
-                if (result == "") return true;
-                var actual = JsonConvert.DeserializeObject<List<dto>>(result);
-
-                // Convert Index to HideVolumes
-                var x = actual.Select(g => g.I);
-                List<List<HideVolumeItem>> intToVolume = new List<List<HideVolumeItem>>();
-                foreach (var group in x)
-                {
-                    var indexes = new List<HideVolumeItem>();
-                    foreach (var volume in group)
-                    {
-                        indexes.Add(allVolumes[volume]);
-                    }
-
-                    intToVolume.Add(
-                        indexes
-                    );
-                }
-
-                var y = actual.Select(g => g.B).ToList();
-
-                var tupled = new List<(List<HideVolumeItem>, bool )>();
-                for (int i = 0; i < intToVolume.Count; i++)
-                {
-                    var bo = y[i] == 1 ? true : false;
-                    tupled.Add((intToVolume[i], bo));
-                }
-
-                groups = tupled;
             }
             catch (Exception e)
             {
-                return false;
+                Debug.Log(e);
             }
-
-            return true;
         }
 
-        /// <summary>
-        /// Looping method run by plugin
-        /// </summary>
-        void Update()
+        private static HideVolumeItem findItem(NGuid id)
         {
-            if (OnBoard())
+            HideVolumeItem item = null;
+            var volumes = hideVolumes;
+            foreach(var volume in volumes)
             {
-                if (!last)
-                {
-                    if (!LoadGroups()) return;
-                }
-                if (groupIndex != -1)
-                {
-                    // Hide all
-                    HideAll();
-
-                   foreach (var volume in groups[groupIndex].Item1)
-                       HideFace(volume, false);
-                }
-                last = true;
+                    if (volume.HideVolume.Id == id) item = volume;
             }
-            else
-            {
-                if (last)
-                {
-                    // Clear Groups
-                    groupIndex = -1;
-                    groups.Clear();
-                }
-
-                last = false;
-            }
+            return item;
         }
+
+        public static void ToggleTiles(NGuid volumeComponent)
+            => ToggleTiles(findItem(volumeComponent));
+
+        public static bool IsVisible(NGuid volumeComponent)
+            => IsVisible(findItem(volumeComponent));
+
 
         public static void ToggleTiles(HideVolumeItem volumeComponent)
         {
-
-            var x = IsVisible(volumeComponent);
-            volumeComponent.VisibilityChange(!x);
-            
+            volumeComponent.ChangeIsActive(!volumeComponent.HideVolume.IsActive);
+            SimpleSingletonBehaviour<HideVolumeManager>.Instance.SetHideVolumeState(volumeComponent.HideVolume);
         }
 
         public static bool IsVisible(HideVolumeItem volumeComponent)
         {
-            Type classType = volumeComponent.GetType();
-            FieldInfo mi = classType.GetField("_taleVolume",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            var t = (TaleVolume)mi.GetValue(volumeComponent);
-            return t.gameObject.active;
+            return !volumeComponent.HideVolume.IsActive;
         }
     }
 }

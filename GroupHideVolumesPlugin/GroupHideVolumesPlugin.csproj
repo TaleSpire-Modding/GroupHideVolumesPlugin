@@ -36,8 +36,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="0Harmony20">
-      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\core\0Harmony20.dll</HintPath>
+    <Reference Include="AssetDataPlugin">
+      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\plugins\LordAshes-AssetDataPlugin\AssetDataPlugin.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx, Version=5.4.9.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -48,10 +48,6 @@
     </Reference>
     <Reference Include="BepInEx.Preloader">
       <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\core\BepInEx.Preloader.dll</HintPath>
-    </Reference>
-    <Reference Include="BoardPersistence, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\CMPDev\BepInEx\plugins\HolloFox_TS-BoardPersistencePlugin\BoardPersistence.dll</HintPath>
     </Reference>
     <Reference Include="Bouncyrock.BouncePackage.Runtime">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TaleSpire\TaleSpire_Data\Managed\Bouncyrock.BouncePackage.Runtime.dll</HintPath>
@@ -123,6 +119,9 @@
     <Reference Include="ShapesRuntime, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TaleSpire\TaleSpire_Data\Managed\ShapesRuntime.dll</HintPath>
+    </Reference>
+    <Reference Include="SourceRole">
+      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\TaleSpire\profiles\Default\BepInEx\plugins\LordAshes-AssetDataPlugin\SourceRole.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
@@ -399,11 +398,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="dto.cs" />
     <Compile Include="HVPActions.cs" />
     <Compile Include="HVPChecks.cs" />
     <Compile Include="HideVolumesPlugin.cs" />
     <Compile Include="ModdingUtil.cs" />
+    <Compile Include="Patches\HVMPatches.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -420,5 +419,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
